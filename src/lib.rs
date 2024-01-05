@@ -5,6 +5,7 @@
 //! It is a future goal to have functions for each version, but for now a single
 //! function call and `match` statement are used.
 use std::fs::File;
+use std::io::{Read, Seek};
 use std::path::Path;
 use std::ptr::null;
 use std::slice::from_raw_parts;
@@ -66,7 +67,6 @@ pub struct Sicd {
     pub version: SicdVersion,
     /// Image data from Nitf Image segements
     pub image_data: Vec<ImageData>,
-    _file: File,
 }
 
 /// Image data structure. Currently only implements Complex<f32> data type
@@ -179,7 +179,7 @@ impl SicdMeta {
     }
 }
 impl Sicd {
-    pub fn from_file(mut file: File) -> Result<Self, NitfError> {
+    pub fn from_file<R: Read + Seek>(mut file: R) -> Result<Self, NitfError> {
         let nitf = Nitf::from_file(&mut file)?;
         let sicd_str = from_utf8(&nitf.data_extension_segments[0].data[..]).unwrap();
         let (version, meta) = parse_sicd(sicd_str).unwrap();
@@ -197,8 +197,7 @@ impl Sicd {
             nitf,
             meta,
             version,
-            image_data,
-            _file: file,
+            image_data
         })
     }
 }
